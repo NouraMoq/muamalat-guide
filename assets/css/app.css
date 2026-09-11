@@ -4,19 +4,38 @@
    أركان حادّة · تعبئة مسطّحة · بلا ظلال · بلا تدرّجات
    ============================================================= */
 
-/* الخط: إحالة إلى Diodrum Arabic المثبّت محليًا. لا يُضمَّن أي ملف خط.
-   لاستخدام ملفات مرخّصة: استبدل local(...) بـ url(...) في هذه الكتلة وحدها. */
-@font-face{font-family:"Diodrum Arabic";font-weight:300;src:local("DiodrumArabic-Light");font-display:swap}
-@font-face{font-family:"Diodrum Arabic";font-weight:400;src:local("DiodrumArabic-Regular"),local("Diodrum Arabic");font-display:swap}
-@font-face{font-family:"Diodrum Arabic";font-weight:500;src:local("DiodrumArabic-Medium");font-display:swap}
-@font-face{font-family:"Diodrum Arabic";font-weight:600;src:local("DiodrumArabic-Semibold");font-display:swap}
+/* الخط المعتمد: Diodrum Arabic — لا يُضمَّن أي ملف خط في هذا المشروع،
+   وإنما تُستخدم النسخة المثبّتة على جهاز القارئ عبر local() وحدها.
+
+   ── لتفعيل نسخة Webfont مرخّصة (عند توفّر الملفات لديك) ──
+   ١) أنشئ المجلد assets/fonts/ وضع فيه هذه الملفات بهذه الأسماء بالضبط:
+        DiodrumArabic-Light.woff2      → 300
+        DiodrumArabic-Regular.woff2    → 400
+        DiodrumArabic-Medium.woff2     → 500
+        DiodrumArabic-Semibold.woff2   → 600
+      هذه الأوزان الأربعة هي كل ما يستعمله الدليل، فلا حاجة إلى غيرها.
+      وصيغة woff2 وحدها تكفي لكل المتصفحات المدعومة.
+   ٢) أزل علامتَي التعليق حول سطر url في الكتلة المقابلة أدناه.
+   ولا تُزلها قبل وجود الملف فعلًا: الغياب يُنتج طلبًا فاشلًا 404.
+   ولا يُضاف أي ملف خط إلى المستودع دون ترخيص يسمح باستضافته. */
+@font-face{font-family:"Diodrum Arabic";font-weight:300;font-style:normal;font-display:swap;
+  src:local("DiodrumArabic-Light")/*,url("../fonts/DiodrumArabic-Light.woff2") format("woff2")*/}
+@font-face{font-family:"Diodrum Arabic";font-weight:400;font-style:normal;font-display:swap;
+  src:local("DiodrumArabic-Regular"),local("Diodrum Arabic")/*,url("../fonts/DiodrumArabic-Regular.woff2") format("woff2")*/}
+@font-face{font-family:"Diodrum Arabic";font-weight:500;font-style:normal;font-display:swap;
+  src:local("DiodrumArabic-Medium")/*,url("../fonts/DiodrumArabic-Medium.woff2") format("woff2")*/}
+@font-face{font-family:"Diodrum Arabic";font-weight:600;font-style:normal;font-display:swap;
+  src:local("DiodrumArabic-Semibold")/*,url("../fonts/DiodrumArabic-Semibold.woff2") format("woff2")*/}
 
 :root{
   --ink:#2C1F6F; --violet:#9022D7; --teal:#00AEB1; --blue:#009EFA;
   --white:#fff; --line:#E8E8E8; --line-2:#D3D3DC; --grey:#7F7F7F; --grey-d:#575756;
   --paper:#FBFBFD;
   --spot-dim:rgba(27,22,81,.30);
-  --font:"Diodrum Arabic","SF Arabic","Segoe UI","Noto Sans Arabic","Geeza Pro",Tahoma,system-ui,sans-serif;
+  /* البدائل مرتّبة بقربها المقيس من Diodrum: نسبة العرض ٠٫٩٦–١٫٠٦ لـTahoma
+     و٠٫٨٤–٠٫٩٤ لخط النظام، مقابل ٠٫٧٠–٠٫٧٩ لـArial فيأتي أخيرًا.
+     كلها مثبّتة محليًا؛ لا Google Fonts ولا أي CDN خارجي. */
+  --font:"Diodrum Arabic","Dubai","Segoe UI","Noto Sans Arabic",system-ui,-apple-system,Tahoma,Arial,sans-serif;
   --ease:cubic-bezier(.22,.61,.36,1);
 }
 *,*::before,*::after{box-sizing:border-box}
@@ -84,7 +103,9 @@ a{color:var(--violet);text-underline-offset:3px}
 .peek__go svg{transition:transform .2s var(--ease)}
 .peek__go:hover svg{transform:translateX(-5px)}
 
-.map{position:relative;height:min(89vh,840px);aspect-ratio:337/616;width:auto;
+/* الارتفاع يقوده محرّك الملاءمة في app.js عبر --mh؛ والقيمة الاحتياطية
+   هي القياس الطبيعي قبل عمل النص البرمجي. النسبة ثابتة فلا تتشوّه الهندسة. */
+.map{position:relative;height:var(--mh,min(89vh,840px));aspect-ratio:337/616;width:auto;
   justify-self:start}
 .map svg.net{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 
@@ -212,7 +233,7 @@ a{color:var(--violet);text-underline-offset:3px}
 
 /* الرقم المعماري: يقف في هامش الطرف ويتداخل مع أعلى الصورة */
 .scene__no{grid-column:2;grid-row:1 / span 2;align-self:start;
-  font-size:clamp(3.6rem, 2rem + 5.4vw, 8.4rem);font-weight:300;line-height:.72;
+  font-size:clamp(3.6rem, 2rem + 5.4vw, 8.4rem);font-weight:300;line-height:var(--no-lh,.72);
   color:var(--violet);letter-spacing:-.05em;font-variant-numeric:tabular-nums;
   margin-top:.06em;position:relative;z-index:5}
 
@@ -334,6 +355,26 @@ a{color:var(--violet);text-underline-offset:3px}
 .lb__stage img{max-width:none;width:auto;min-width:min(100%,940px);background:#fff}
 
 /* =========================== الاستجابة =========================== */
+/* ============ اتزان الطباعة حين لا يتوفّر Diodrum ============
+   تُضاف nofd على <html> حين يتعذّر Diodrum، وnomid حين تكون العائلة
+   البديلة بوزنين فقط فيسقط الوزن المتوسط إلى العادي.
+   القيم مشتقّة من قياس المتريّات لا من التقدير: البدائل أعلى صعودًا
+   بنسبة ٥–٩٪ (نسبة الصعود للرقم ٠٫٦٨ في Diodrum مقابل ٠٫٧٤ في Tahoma)
+   وحروفها العربية تتّصل أضيق، فيُرخى التتبّع ويُفسح سطر النص.
+   ولا يمسّ ذلك المقاسات ولا الألوان ولا التكوين. */
+.nofd h1,.nofd h2,.nofd h3{line-height:1.2}
+.nofd .word{line-height:.96;letter-spacing:-.028em}
+.nofd .peek__title{line-height:1.1;letter-spacing:-.018em}
+.nofd .thead h1{letter-spacing:-.018em}
+.nofd .scene__do{letter-spacing:-.014em}
+.nofd{--no-lh:.8}                       /* وإلا قُصّ أعلى الرقم الضخم */
+.nofd .info__no{line-height:.86}
+.nofd .stop--now .stop__t{line-height:1.18;letter-spacing:-.018em}
+.nofd .done__t{letter-spacing:-.012em}
+.nofd .cap__t,.nofd .n__t{text-shadow:0 0 4px #fff,0 0 10px #fff,0 0 10px #fff}
+.nomid .cap__t,.nomid .eyebrow,.nomid .peek__kind,
+.nomid .stop__k,.nomid .aside__h,.nomid .scene__of{font-weight:600}
+
 @media (max-width:1180px){
   .stage{grid-template-columns:1fr;gap:0;padding:88px 28px 34px}
   .legend{grid-column:1}

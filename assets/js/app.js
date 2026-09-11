@@ -20,6 +20,52 @@
   function sv(t, a) { var n = document.createElementNS(NS, t); Object.keys(a).forEach(function (k) { n.setAttribute(k, a[k]); }); return n; }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
+  /* ==========================================================
+     حالة الخط — لا يُضمَّن أي ملف خط، ولا يُطلب شيء من الشبكة.
+     نقيس عرض نصّ عربي بعائلتين أساسيّتين: إن غيّرت "Diodrum Arabic"
+     العرض فهي متاحة فعلًا، وإلا فالمعروض بديل ⇒ تُضاف nofd.
+     وإن تساوى الوزن ٥٠٠ مع ٤٠٠ فالعائلة البديلة بلا وزن متوسط ⇒ nomid.
+     ========================================================== */
+  function fontState() {
+    var cx = document.createElement('canvas').getContext('2d');
+    var S = 'معاملات نظام الإجراءات', root = document.documentElement;
+    function q(f) { return /^(system-ui|sans-serif|serif)$/.test(f) ? f : '"' + f + '"'; }
+    function w(fam, wt) { cx.font = (wt || 400) + ' 64px ' + fam; return cx.measureText(S).width; }
+    /* عائلة متاحة = وجودها يغيّر العرض مقابل الأساس وحده */
+    function usable(f) {
+      return ['monospace', 'serif'].some(function (b) {
+        return Math.abs(w(q(f) + ',' + b) - w(b)) > 0.5;
+      });
+    }
+    /* الترتيب نفسه المكتوب في --font، فنعرف أيّ عائلة ستُعرض فعلًا */
+    var CAND = ['Diodrum Arabic', 'Dubai', 'Segoe UI', 'Noto Sans Arabic',
+                'system-ui', 'Tahoma', 'Arial'], shown = null;
+    for (var i = 0; i < CAND.length && !shown; i++) if (usable(CAND[i])) shown = CAND[i];
+    root.classList.toggle('nofd', shown !== 'Diodrum Arabic');
+    /* هل للعائلة المعروضة وزن متوسط حقيقي؟
+       عرض السطر لا يصلح مقياسًا: عروض Diodrum تكاد لا تتغيّر بين أوزانه
+       (٦٣٨٫٩ عند ٤٠٠ مقابل ٦٣٨٫٥ عند ٥٠٠). فيُقاس الحبر نفسه:
+       نرسم النصّ ونعدّ البكسلات الداكنة. المقيس هنا:
+       Diodrum ‎+٣٢٪ وخط النظام ‎+١٥٪ عند ٥٠٠، بينما Tahoma وArial صفر بالضبط. */
+    var f = q(shown || 'sans-serif');
+    function ink(wt) {
+      var cn = document.createElement('canvas'); cn.width = 300; cn.height = 52;
+      var g = cn.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, 300, 52);
+      g.fillStyle = '#000'; g.font = wt + ' 34px ' + f; g.textBaseline = 'middle';
+      g.fillText('معاملات نظام', 8, 28);
+      var d, n = 0, i;
+      try { d = g.getImageData(0, 0, 300, 52).data; } catch (e) { return -1; }
+      for (i = 0; i < d.length; i += 4) if (d[i] < 128) n++;
+      return n;
+    }
+    var i4 = ink(400), i5 = ink(500), i6 = ink(600);
+    root.classList.toggle('nomid',
+      i4 > 0 && (i5 - i4) / i4 < 0.05 && (i6 - i4) / i4 > 0.15);
+    return shown;
+  }
+  fontState();
+
   /* مقاسات اللقطات — لحجز المساحة قبل التحميل. عند إضافة لقطة، أضف سطرها. */
   var IMG_SIZE = {
     'login.png':[1213,475], 'home.png':[1559,757], 'internal-form.png':[1174,588],
@@ -137,6 +183,87 @@
 
     $$('.ln', net).forEach(function (p) { p.style.setProperty('--len', p.getTotalLength()); });
     built = true;
+  }
+
+  /* ==========================================================
+     محرّك الملاءمة — يشتقّ مقاس التكوين من المحتوى المرئي فعلًا
+     لا من أبعاد مصمَّمة لمقاس واحد.
+
+     صندوق الإحاطة يضمّ: المسارات · منافذ المجموعات · تسمياتها ·
+     أسماء الإجراءات · رمز المعاملة · المسار النشط. وتُقاس تسميات
+     الإجراءات كلها ولو كانت مخفيّة — فالمقاس محسوب لأسوأ حالة،
+     ومن ثمّ لا يتغيّر شيء حين تُفتح مجموعة: لا قفزة ولا إعادة حساب.
+
+     التسميات نصّ بمقاس ثابت لا يصغر مع الخريطة، فالعلاقة بين
+     الارتفاع والعرض المطلوب ليست خطّية ⇒ نُكرّر حتى الاستقرار.
+     والنسبة 337:616 ثابتة، فلا تتبدّل الهندسة ولا أطوال السيقان.
+     ========================================================== */
+  var FIT_MAX = 840, FIT_MIN = 330;     /* سقف التكوين الطبيعي وأرضيّته */
+  var ASPECT  = VW / VH;                /* نسبة التكوين — لا تتغيّر */
+  var INK = 10;                         /* فائض الحبر: سماكة الحدّ، تكبير العقدة
+                                           عند التحويم، الرمز، وانزياح التسمية */
+
+  /* الحدّ الأدنى الذي طُلب: ٢٤–٣٢ على سطح المكتب، ١٦–٢٠ على الأصغر.
+     يُؤخذ أدنى النطاق حفاظًا على مقاس التكوين المعتمد. */
+  function safePad() { return innerWidth < 900 ? 18 : 24; }
+
+  /* المساحة المتاحة للخريطة: مسارها في الشبكة عرضًا، والمنظور ارتفاعًا */
+  function cellBox() {
+    var r = stage.getBoundingClientRect(), cs = getComputedStyle(stage);
+    var pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0;
+    var pt = parseFloat(cs.paddingTop) || 0, pb = parseFloat(cs.paddingBottom) || 0;
+    var tracks = cs.gridTemplateColumns.split(' ').map(parseFloat)
+                   .filter(function (n) { return !isNaN(n); });
+    var gap = parseFloat(cs.columnGap) || 0;
+    var two = tracks.length > 1;
+    var i = two ? 1 : 0;                /* الخريطة في المسار الثاني عند عمودين */
+    var x = r.right - pr;               /* اتجاه RTL: المسار الأول يبدأ من اليمين */
+    for (var j = 0; j < i; j++) x -= tracks[j] + gap;
+    var left = tracks.length ? x - tracks[i] : r.left + pl;
+    var top, bot;
+    /* الارتفاع يُقاس على المنظور لا على الساحة: ارتفاع الساحة يتبع الخريطة،
+       فلو قِيس عليه لتغذّى الحساب من نفسه وكبرت الخريطة بلا حدّ. */
+    if (two) { top = pt; bot = innerHeight - pb; }
+    else {                              /* عمود واحد: نافذة بمقاس المنظور تحت الترويسة */
+      var hd = $('.top'); top = hd ? hd.getBoundingClientRect().bottom : 0; bot = innerHeight;
+    }
+    return { left: left, right: x, top: top, bottom: bot };
+  }
+
+  /* صندوق إحاطة كل ما يُرى — بإحداثيات المنظور */
+  function contentBox() {
+    var b = null;
+    function add(r) {
+      if (!r || (!r.width && !r.height)) return;
+      b = b ? { l: Math.min(b.l, r.left), t: Math.min(b.t, r.top),
+                r: Math.max(b.r, r.right), b: Math.max(b.b, r.bottom) }
+            : { l: r.left, t: r.top, r: r.right, b: r.bottom };
+    }
+    add(net.getBoundingClientRect());
+    $$('.cap__d,.cap__t,.n__d,.n__t', nodesL).forEach(function (e) { add(e.getBoundingClientRect()); });
+    return b;
+  }
+
+  function fitMap() {
+    if (!built || !mapBox.getClientRects().length) return;
+    var pad = safePad(), i, h;
+    for (i = 0; i < 5; i++) {
+      var box = cellBox(), c = contentBox(), m = mapBox.getBoundingClientRect();
+      if (!c || !m.width || !m.height) return;
+      var oL = (m.left - c.l) + INK, oR = (c.r - m.right) + INK;   /* فائض التسميات */
+      var oT = (m.top - c.t) + INK,  oB = (c.b - m.bottom) + INK;  /* ثابت لا يصغر */
+      var aW = (box.right - box.left) - 2 * pad;
+      var aH = (box.bottom - box.top) - 2 * pad;
+      h = Math.max(FIT_MIN, Math.min(FIT_MAX, (aW - oL - oR) / ASPECT, aH - oT - oB));
+      if (Math.abs(h - m.height) < 0.5) break;
+      mapBox.style.setProperty('--mh', h.toFixed(1) + 'px');
+    }
+    /* وإن بقي طرفٌ يلامس حافة البداية، أُزيح الكتلة دون مسّ مقاسها */
+    mapBox.style.marginInlineStart = '0px';
+    var bx = cellBox(), cc = contentBox();
+    if (!cc) return;
+    var over = Math.max(0, (cc.r + INK) - (bx.right - pad));
+    if (over > 0.5) mapBox.style.marginInlineStart = over.toFixed(1) + 'px';
   }
 
   function toStage(x, y) {
@@ -714,6 +841,7 @@
 
   /* ============================== الربط ============================== */
   buildMap();
+  fitMap();
   drawMobile(false);
   route();
   var lead = buildLead();
@@ -759,6 +887,7 @@
     if (document.hidden) return;
     var sc = $('.scene'); if (sc && sc._redraw) sc._redraw();
     if (!scMap.hidden && built) {
+      fitMap();
       if (activeId) { connect(activeId); var g = TASKPOS[activeId], q = toStage(g.x, g.y); place(q.x, q.y); }
       else { var r = toStage(CHAIN.start.x, CHAIN.start.y); place(r.x, r.y); }
       token.classList.add('in');
@@ -768,9 +897,21 @@
   addEventListener('resize', function () {
     var sc = $('.scene'); if (sc && sc._redraw) sc._redraw();
     if (scMap.hidden) return;
+    fitMap();
     if (activeId) { connect(activeId); var g = TASKPOS[activeId], q = toStage(g.x, g.y); place(q.x, q.y); }
     else { var r = toStage(CHAIN.start.x, CHAIN.start.y); place(r.x, r.y); }
   });
+
+  /* عرض التسميات يتبع الخط المستقرّ، فتُعاد الملاءمة مرّة بعد جاهزيته */
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      fontState(); fitMap();
+      if (!scMap.hidden && built) {
+        if (activeId) { connect(activeId); var g = TASKPOS[activeId], q = toStage(g.x, g.y); place(q.x, q.y); }
+        else { var r = toStage(CHAIN.start.x, CHAIN.start.y); place(r.x, r.y); }
+      }
+    });
+  }
 
   /* الإقلاع: يُرسم المسار، ثم تظهر المعاملة عند العنوان وتنساب إلى بدايته */
   if (!still()) {
