@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الدليل التفاعلي لنظام معاملات</title>
+<meta name="description" content="خريطة تفاعلية لنظام معاملات: اختر الإجراء الذي تريده وتابع تنفيذه خطوة بخطوة.">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+
+<a class="skip" href="#main">تخطّي إلى المحتوى</a>
+
+<header class="top">
+  <a class="top__mark" href="#/" aria-label="الدليل التفاعلي لنظام معاملات — خريطة النظام">
+    <b>الدليل التفاعلي</b><i></i><span>نظام معاملات</span>
+  </a>
+  <button class="searchbtn" id="open-pal" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6"
+         stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.8-3.8"></path></svg>
+    <span>ابحث في معاملات</span><kbd>⌘K</kbd>
+  </button>
+</header>
+
+<main id="main">
+
+  <!-- ==================== خريطة النظام ==================== -->
+  <section id="screen-map" class="screen" aria-labelledby="map-title">
+
+    <!-- سطح المكتب -->
+    <div class="stage" id="stage">
+      <svg class="linklayer" id="linklayer" aria-hidden="true"></svg>
+
+      <div class="token" id="token">
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <rect class="ghost" x="5.6" y="0.6" width="13.8" height="13.8" fill="none"
+                stroke="currentColor" stroke-width="1.15"></rect>
+          <rect x="0" y="5" width="14" height="14" fill="currentColor"></rect>
+        </svg>
+      </div>
+
+      <div class="right">
+        <div id="lede">
+          <p class="eyebrow">خريطة النظام</p>
+          <h1 class="ask" id="map-title">ماذا تريد أن تفعل في<span class="word" id="word">معاملات؟</span></h1>
+          <p class="hint">مرّ على مجموعة لتنفتح إجراءاتها، ثم اضغط الإجراء لتبدأ. الترتيب توضيحي ولا يفرضه النظام.</p>
+        </div>
+
+        <div class="peek" id="peek" hidden>
+          <p class="peek__kind" id="pkind"></p>
+          <h2 class="peek__title" id="ptitle"></h2>
+          <p class="peek__line" id="pline"></p>
+          <div class="peek__shot" id="pshot"><img id="pimg" alt=""></div>
+          <a class="peek__go" id="pgo" href="#/">
+            <span>ابدأ الشرح</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5l-7 7 7 7"></path></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="map" id="map">
+        <svg class="net" id="net" aria-hidden="true"></svg>
+        <div id="nodes"></div>
+      </div>
+
+
+    </div>
+
+    <!-- الجوال: نافذة على ثلاثة إجراءات -->
+    <div class="mobile" id="mobile">
+      <div class="m-hero">
+        <p class="eyebrow">خريطة النظام</p>
+        <h2 class="ask">ماذا تريد أن تفعل في<span class="word">معاملات؟</span></h2>
+      </div>
+
+      <div class="win" id="win">
+        <span class="win__rail"></span>
+
+        <button class="stop stop--near" id="prev" type="button">
+          <span class="stop__dot"><i></i></span>
+          <span class="stop__body"><span class="stop__t" id="prevT"></span></span>
+        </button>
+
+        <div class="stop stop--now">
+          <span class="stop__dot">
+            <svg class="stop__tok" viewBox="0 0 20 20" aria-hidden="true">
+              <rect class="ghost" x="5.6" y="0.6" width="13.8" height="13.8" fill="none"
+                    stroke="currentColor" stroke-width="1.15"></rect>
+              <rect x="0" y="5" width="14" height="14" fill="currentColor"></rect>
+            </svg>
+          </span>
+          <div class="stop__body">
+            <p class="stop__k" id="nowK"></p>
+            <h3 class="stop__t" id="nowT"></h3>
+            <p class="stop__line" id="nowL"></p>
+            <div class="m-shot" id="mshot"><img id="mimg" alt=""></div>
+            <div class="m-acts">
+              <a class="m-go" id="mgo" href="#/">
+                <span>ابدأ الشرح</span>
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5l-7 7 7 7"></path></svg>
+              </a>
+              <button class="m-step" id="mUp" type="button" aria-label="الإجراء السابق">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"></path></svg>
+              </button>
+              <button class="m-step" id="mDn" type="button" aria-label="الإجراء التالي">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button class="stop stop--near" id="next" type="button">
+          <span class="stop__dot"><i></i></span>
+          <span class="stop__body"><span class="stop__t" id="nextT"></span></span>
+        </button>
+      </div>
+
+      <p class="m-meta">
+        <span id="counter"></span>
+        <button class="m-all" id="m-all" type="button">جميع الإجراءات</button>
+      </p>
+      <p class="m-note">هذه خريطة استكشاف لإجراءات النظام، وليست تسلسلًا إلزاميًّا. كل إجراء يُفتح مباشرة.</p>
+    </div>
+  </section>
+
+  <!-- ==================== شاشة المهمة ==================== -->
+  <section id="screen-task" class="screen task" hidden aria-labelledby="task-title">
+    <div class="task__main">
+      <nav class="crumb" id="crumb" aria-label="مسار التنقّل"></nav>
+      <article id="task-body"></article>
+    </div>
+    <nav class="rail" id="rail" aria-label="موضعك في خريطة النظام"></nav>
+  </section>
+
+</main>
+
+<!-- ==================== لوحة الأوامر ==================== -->
+<div class="pal" id="pal" hidden role="dialog" aria-modal="true" aria-labelledby="pal-label">
+  <div class="pal__veil" id="pal-veil"></div>
+  <div class="pal__box">
+    <label class="sr-only" id="pal-label" for="pal-input">ابحث عن إجراء في نظام معاملات</label>
+    <div class="pal__field">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6"
+           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.8-3.8"></path></svg>
+      <input id="pal-input" type="text" autocomplete="off" spellcheck="false"
+             placeholder="ابحث عن إجراء… مرفق، إحالة، صادر، متابعة"
+             role="combobox" aria-expanded="true" aria-controls="pal-list" aria-autocomplete="list">
+      <span class="pal__esc">Esc</span>
+    </div>
+    <div class="pal__list" id="pal-list" role="listbox" aria-label="نتائج البحث"></div>
+  </div>
+</div>
+
+<!-- ==================== عارض الصور ==================== -->
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-labelledby="lb-cap">
+  <div class="lb__bar">
+    <p class="lb__cap" id="lb-cap"></p>
+    <button class="lb__x" id="lb-x" aria-label="إغلاق الصورة">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+  </div>
+  <div class="lb__stage"><img id="lb-img" alt=""></div>
+</div>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/map.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
