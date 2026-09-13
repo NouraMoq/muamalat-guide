@@ -79,7 +79,10 @@ a{color:var(--violet);text-underline-offset:3px}
   transition:opacity .5s var(--ease)}
 
 .right{position:relative;z-index:2}
-.eyebrow{font-size:.75rem;letter-spacing:.2em;color:var(--violet);font-weight:500;margin-bottom:26px}
+/* العربية خطّ متّصل، والتتبّع الموجب يفتح فجوات داخل الكلمة نفسها —
+   يظهر ذلك جليًّا على iOS حيث يُعرض خط النظام. فنُقل «هواء» التسميات
+   الصغيرة إلى المسافة بين الكلمات: الأثر البصري نفسه والاتصال سليم. */
+.eyebrow{font-size:.75rem;word-spacing:.34em;color:var(--violet);font-weight:500;margin-bottom:26px}
 .ask{font-size:clamp(1.2rem, .7rem + 1.1vw, 1.75rem);font-weight:300;color:var(--grey-d);letter-spacing:-.01em}
 .word{display:block;margin-top:-.06em;font-size:clamp(3.4rem, 1.4rem + 6.6vw, 7.4rem);font-weight:600;
   color:var(--violet);letter-spacing:-.045em;line-height:.92}
@@ -87,7 +90,7 @@ a{color:var(--violet);text-underline-offset:3px}
   color:var(--grey);max-width:46ch}
 
 .peek{position:relative;z-index:2}
-.peek__kind{font-size:.75rem;letter-spacing:.2em;color:var(--violet);font-weight:500}
+.peek__kind{font-size:.75rem;word-spacing:.34em;color:var(--violet);font-weight:500}
 .peek__title{margin-top:10px;font-size:clamp(1.8rem, 1.1rem + 2vw, 3.1rem);font-weight:500;
   letter-spacing:-.03em;line-height:1.05}
 .peek__line{margin-top:14px;color:var(--grey-d);font-size:1rem;max-width:44ch}
@@ -155,7 +158,7 @@ a{color:var(--violet);text-underline-offset:3px}
   transition:color .18s var(--ease)}
 .cap--down .cap__t{top:calc(100% + 6px)}
 .cap--up   .cap__t{bottom:calc(100% + 6px)}
-.cap--origin .cap__t{font-size:.82rem;font-weight:400;color:var(--grey);letter-spacing:.14em}
+.cap--origin .cap__t{font-size:.82rem;font-weight:400;color:var(--grey);word-spacing:.24em}
 .cap:hover .cap__d,.cap.on .cap__d{background:var(--violet);border-color:var(--violet);opacity:1;transform:scale(1.22)}
 .cap:hover .cap__t,.cap.on .cap__t{color:var(--violet)}
 
@@ -171,6 +174,37 @@ a{color:var(--violet);text-underline-offset:3px}
 /* ======================= الجوال — نافذة الرحلة ======================= */
 .mobile{display:none;padding:92px 20px 36px;min-height:100vh}
 .m-hero .eyebrow{margin-bottom:16px}
+/* ---------- خريطة المجموعات على الجوّال ----------
+   هندسة السلسلة نفسها ونسبتها 337:616 — بلا تبديل زاوية ولا طول ساق.
+   تُعرض المنافذ الخمسة وحدها: أسماء الإجراءات تبقى في النافذة أدناه.
+   المقاس يقرّره محرّك الملاءمة نفسه. */
+.m-map{position:relative;margin:38px auto 0;height:var(--mmh,300px);
+  aspect-ratio:337/616;width:auto}
+.m-net{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.m-net .ln{stroke-width:2.6}
+.mroute{fill:none;stroke:var(--violet);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;
+  transition:opacity .3s var(--ease)}
+.m-nodes{position:absolute;inset:0}
+.mcap{position:absolute;transform:translate(-50%,-50%);padding:11px;background:none;border:0;
+  cursor:pointer;line-height:0;-webkit-tap-highlight-color:transparent}
+.mcap__d{display:block;width:14px;height:14px;border-radius:50%;background:var(--ink);opacity:.8;
+  transition:background-color .22s var(--ease),transform .22s var(--ease),opacity .22s var(--ease)}
+.mcap--origin .mcap__d{width:8px;height:8px;background:none;border:1.6px solid var(--ink);opacity:.5}
+.mcap__t{position:absolute;inset-inline-start:50%;transform:translateX(50%);white-space:nowrap;
+  font-size:.8rem;font-weight:500;color:var(--ink);
+  text-shadow:0 0 4px #fff,0 0 9px #fff,0 0 9px #fff;transition:color .18s var(--ease)}
+.mcap--down .mcap__t{top:calc(100% + 5px)}
+.mcap--up   .mcap__t{bottom:calc(100% + 5px)}
+.mcap--origin .mcap__t{font-size:.72rem;font-weight:400;color:var(--grey);word-spacing:.24em}
+/* المنفذان السفليّان على ارتفاع واحد؛ إن ضاق العرض نزل أحدهما سطرًا
+   ووصله خيط رفيع بنقطته، فيبقى الاسم مقروءًا كنهاية لخطّه. */
+.mcap--drop .mcap__t{top:calc(100% + 26px)}
+.mcap__lead{position:absolute;inset-inline-start:50%;top:calc(100% + 4px);width:1px;height:20px;
+  background:var(--line-2);display:none}
+.mcap--drop .mcap__lead{display:block}
+.mcap.on .mcap__d{background:var(--violet);border-color:var(--violet);opacity:1;transform:scale(1.25)}
+.mcap.on .mcap__t{color:var(--violet)}
+
 .win{margin-top:34px;position:relative}
 .win__rail{position:absolute;inset-block:0;inset-inline-start:13px;width:1px;background:var(--line)}
 .stop{position:relative;display:flex;gap:16px;align-items:flex-start;width:100%;text-align:start;
@@ -184,7 +218,7 @@ a{color:var(--violet);text-underline-offset:3px}
 .stop--near .stop__t{font-size:.94rem;font-weight:400;color:var(--grey-d)}
 .stop--now{padding-block:6px 0}
 .stop__body{flex:1;min-width:0}
-.stop__k{font-size:.72rem;letter-spacing:.18em;color:var(--violet);font-weight:500;margin-bottom:6px}
+.stop__k{font-size:.72rem;word-spacing:.3em;color:var(--violet);font-weight:500;margin-bottom:6px}
 .stop__t{font-size:1.02rem;font-weight:500;color:var(--ink);letter-spacing:-.01em}
 .stop--now .stop__t{font-size:1.7rem;font-weight:600;letter-spacing:-.03em;line-height:1.12}
 .stop__line{margin-top:8px;font-size:.92rem;color:var(--grey-d)}
@@ -224,7 +258,7 @@ a{color:var(--violet);text-underline-offset:3px}
 .scene__wire path{fill:none;stroke:var(--violet);stroke-width:1.1;opacity:.6}
 
 .scene__lead{grid-column:1;margin-bottom:14px}
-.scene__of{font-size:.75rem;letter-spacing:.16em;color:var(--grey)}
+.scene__of{font-size:.75rem;word-spacing:.28em;color:var(--grey)}
 .scene__do{margin-top:5px;font-size:clamp(1.3rem, 1rem + 1.1vw, 2.05rem);font-weight:500;
   letter-spacing:-.025em;max-width:38ch}
 .scene__list{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px 10px;max-width:70ch}
@@ -270,7 +304,7 @@ a{color:var(--violet);text-underline-offset:3px}
 
 /* تفاصيل ثانوية بعد الصورة */
 .aside{margin-top:34px;padding-top:20px;border-top:1px solid var(--line);max-width:92ch}
-.aside__h{font-size:.72rem;letter-spacing:.18em;color:var(--grey);font-weight:500}
+.aside__h{font-size:.72rem;word-spacing:.3em;color:var(--grey);font-weight:500}
 .aside__t{margin-top:10px;color:var(--grey-d);font-size:.95rem}
 .aside .note{margin-top:14px}
 

@@ -421,6 +421,124 @@
 
   /* ==================== الجوال — نافذة الإجراءات ==================== */
   var JOURNEY = MAP.journey, mi = 4;
+  /* ==========================================================
+     خريطة المجموعات على الجوّال — السلسلة نفسها بالمنافذ وحدها.
+     الهندسة مشتركة مع سطح المكتب: walk() واحدة لا نسخة ثانية،
+     فلا يمكن أن تتباعد الخريطتان. ما يختلف هو ما يُعرض فقط:
+     المنافذ الخمسة بلا أسماء إجراءات، لأن تفصيلها في النافذة أدناه.
+     ========================================================== */
+  var mmap = $('#mmap'), mnet = $('#mnet'), mnodes = $('#mnodes');
+  var mroute = null, MPORT_AT = {};
+
+  /* إطار الجوّال يُقصّ على حدود السلسلة نفسها: إطار سطح المكتب يحجز
+     أسفله مساحة لعقد الإجراءات، وهي لا تُرسم هنا فتبقى فراغًا.
+     الإحداثيات هي هي — يتغيّر القصّ لا الهندسة. */
+  var MVB = (function () {
+    var xs = CH.pts.map(function (q) { return q.x; }), ys = CH.pts.map(function (q) { return q.y; });
+    var pd = 16;
+    var x0 = Math.min.apply(null, xs) - pd, y0 = Math.min.apply(null, ys) - pd;
+    return [x0, y0, Math.max.apply(null, xs) + pd - x0, Math.max.apply(null, ys) + pd - y0];
+  })();
+  var MASPECT = MVB[2] / MVB[3];
+
+  function buildMobileMap() {
+    mmap.style.aspectRatio = MVB[2] + ' / ' + MVB[3];
+    mnet.setAttribute('viewBox', MVB.join(' '));
+    var d = 'M' + CH.pts.map(function (q) { return q.x + ',' + q.y; }).join(' L');
+    mnet.appendChild(sv('path', { class: 'ln', d: d }));
+    mroute = sv('path', { class: 'mroute', d: d, opacity: '0' });
+    mnet.appendChild(mroute);
+
+    Object.keys(CH.portals).forEach(function (gid) {
+      var q = CH.portals[gid];
+      for (var i = 0; i < CH.pts.length; i++)
+        if (Math.abs(CH.pts[i].x - q.x) < .01 && Math.abs(CH.pts[i].y - q.y) < .01) { MPORT_AT[gid] = i; break; }
+      var g = GUIDE.groups.filter(function (x) { return x.id === gid; })[0];
+      if (!g) return;
+      var b = el('button', 'mcap mcap--' + (CH.dir[gid] > 0 ? 'down' : 'up') + (q.origin ? ' mcap--origin' : ''));
+      b.type = 'button'; b.dataset.grp = gid;
+      b.style.left = ((q.x - MVB[0]) / MVB[2] * 100) + '%';
+      b.style.top  = ((q.y - MVB[1]) / MVB[3] * 100) + '%';
+      b.appendChild(el('span', 'mcap__d'));
+      b.appendChild(el('span', 'mcap__lead'));
+      b.appendChild(el('span', 'mcap__t', q.label || g.title));
+      b.setAttribute('aria-label', (q.label || g.title) + ' — ' + g.tasks.length + ' إجراءات');
+      mnodes.appendChild(b);
+    });
+  }
+
+  /* أوّل إجراء لهذه المجموعة في ترتيب التصفّح */
+  function firstOf(gid) {
+    for (var i = 0; i < JOURNEY.length; i++)
+      if (OWNER[JOURNEY[i]] && OWNER[JOURNEY[i]].id === gid) return i;
+    return -1;
+  }
+
+  /* إبراز منفذ المجموعة التي ينتمي إليها الإجراء المعروض، وإضاءة طريقه */
+  function syncMobileMap() {
+    if (!mroute) return;
+    var gid = OWNER[JOURNEY[mi]] && OWNER[JOURNEY[mi]].id;
+    $$('.mcap', mnodes).forEach(function (b) { b.classList.toggle('on', b.dataset.grp === gid); });
+    var k = MPORT_AT[gid];
+    if (k == null) { mroute.setAttribute('opacity', '0'); return; }
+    mroute.setAttribute('d', 'M' + CH.pts.slice(0, k + 1).map(function (q) {
+      return q.x + ',' + q.y; }).join(' L'));
+    mroute.setAttribute('opacity', '1');
+  }
+
+  /* المقاس: العرض المتاح يحكم، ثم سقف رأسي حتى تبقى النافذة قريبة.
+     التسميات نصّ ثابت لا يصغر مع الخريطة ⇒ نُكرّر حتى الاستقرار. */
+  function fitMobileMap() {
+    if (!mroute || !mmap.getClientRects().length) return;
+    var pad = 16, i, h;
+    var hp = mmap.parentNode, hcs = getComputedStyle(hp);
+    var hostW = hp.getBoundingClientRect().width
+              - (parseFloat(hcs.paddingLeft) || 0) - (parseFloat(hcs.paddingRight) || 0);
+    var hd = $('.top'), top = hd ? hd.getBoundingClientRect().height : 64;
+    var capH = Math.min(520, Math.max(240, (innerHeight - top) * 0.60));
+    for (i = 0; i < 5; i++) {
+      var m = mmap.getBoundingClientRect(), c = mBox();
+      if (!c || !m.width) return;
+      var oL = (m.left - c.l) + 8, oR = (c.r - m.right) + 8;
+      var aW = hostW - 2 * pad;
+      h = Math.max(200, Math.min(capH, (aW - oL - oR) / MASPECT));
+      if (Math.abs(h - m.height) < 0.5) break;
+      mmap.style.setProperty('--mmh', h.toFixed(1) + 'px');
+    }
+    dropCheck();
+    /* التسميات تمتدّ يسارًا فيختلّ التوازن لو وُسِّط الصندوق وحده.
+       تُوسَّط الكتلة المرئية كلها بإزاحة بصرية لا تمسّ التخطيط. */
+    mmap.style.transform = 'none';
+    var c2 = mBox(); if (!c2) return;
+    var hostL = hp.getBoundingClientRect().left + (parseFloat(hcs.paddingLeft) || 0);
+    var dx = (((hostL + hostW) - c2.r) - (c2.l - hostL)) / 2;
+    if (Math.abs(dx) > 1) mmap.style.transform = 'translateX(' + dx.toFixed(1) + 'px)';
+  }
+  function mBox() {
+    var b = null;
+    function add(r) {
+      if (!r || (!r.width && !r.height)) return;
+      b = b ? { l: Math.min(b.l, r.left), t: Math.min(b.t, r.top),
+                r: Math.max(b.r, r.right), b: Math.max(b.b, r.bottom) }
+            : { l: r.left, t: r.top, r: r.right, b: r.bottom };
+    }
+    add(mnet.getBoundingClientRect());
+    $$('.mcap__d,.mcap__t', mnodes).forEach(function (e) { add(e.getBoundingClientRect()); });
+    return b;
+  }
+  /* منفذا «إنشاء» و«العثور» على ارتفاع واحد: إن تلامس اسماهما نزل الأيسر سطرًا */
+  function dropCheck() {
+    var caps = $$('.mcap--down', mnodes);
+    caps.forEach(function (b) { b.classList.remove('mcap--drop'); });
+    if (caps.length < 2) return;
+    var a = caps[0].querySelector('.mcap__t').getBoundingClientRect();
+    var z = caps[1].querySelector('.mcap__t').getBoundingClientRect();
+    if (Math.min(a.right, z.right) - Math.max(a.left, z.left) > -6) {
+      var left = a.left <= z.left ? caps[0] : caps[1];
+      left.classList.add('mcap--drop');
+    }
+  }
+
   function drawMobile(anim) {
     var id = JOURNEY[mi], t = TASKS[id], b = firstShot(t);
     $('#nowK').textContent = OWNER[id].title;
@@ -440,6 +558,7 @@
     if (n) $('#nextT').textContent = TASKS[n].title;
     $('#mUp').disabled = !p; $('#mDn').disabled = !n;
     $('#counter').textContent = 'الإجراء ' + (mi + 1) + ' من ' + JOURNEY.length;
+    syncMobileMap();
   }
   function mstep(d) { var n = mi + d; if (n < 0 || n >= JOURNEY.length) return; mi = n; drawMobile(true); }
 
@@ -842,6 +961,8 @@
   /* ============================== الربط ============================== */
   buildMap();
   fitMap();
+  buildMobileMap();
+  fitMobileMap();
   drawMobile(false);
   route();
   var lead = buildLead();
@@ -870,6 +991,13 @@
   });
   mapBox.addEventListener('mouseleave', function () { if (HOVERS.matches) clearPeek(); });
 
+  mnodes.addEventListener('click', function (e) {
+    var b = e.target.closest('.mcap'); if (!b) return;
+    var k = firstOf(b.dataset.grp); if (k < 0) return;
+    mi = k; drawMobile(true);
+    $('#win').scrollIntoView({ behavior: still() ? 'auto' : 'smooth', block: 'start' });
+  });
+
   $('#mUp').addEventListener('click', function () { mstep(-1); });
   $('#mDn').addEventListener('click', function () { mstep(1); });
   $('#prev').addEventListener('click', function () { mstep(-1); });
@@ -897,7 +1025,7 @@
   addEventListener('resize', function () {
     var sc = $('.scene'); if (sc && sc._redraw) sc._redraw();
     if (scMap.hidden) return;
-    fitMap();
+    fitMap(); fitMobileMap();
     if (activeId) { connect(activeId); var g = TASKPOS[activeId], q = toStage(g.x, g.y); place(q.x, q.y); }
     else { var r = toStage(CHAIN.start.x, CHAIN.start.y); place(r.x, r.y); }
   });
@@ -905,7 +1033,7 @@
   /* عرض التسميات يتبع الخط المستقرّ، فتُعاد الملاءمة مرّة بعد جاهزيته */
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(function () {
-      fontState(); fitMap();
+      fontState(); fitMap(); fitMobileMap();
       if (!scMap.hidden && built) {
         if (activeId) { connect(activeId); var g = TASKPOS[activeId], q = toStage(g.x, g.y); place(q.x, q.y); }
         else { var r = toStage(CHAIN.start.x, CHAIN.start.y); place(r.x, r.y); }
